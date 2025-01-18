@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Змійка</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        #game-container {
+            text-align: center;
+        }
+
+        #gameCanvas {
+            border: 2px solid black;
+            background-color: #e0e0e0;
+        }
+
+        #score-board {
+            margin-top: 10px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div id="score-board">Очки: 0</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const scale = 20;
+        const rows = canvas.height / scale;
+        const columns = canvas.width / scale;
+
+        let score = 0;
+        let snake;
+        let food;
+
+        (function setup() {
+            snake = new Snake();
+            food = new Food();
+            window.setInterval(gameLoop, 100);
+            document.addEventListener("keydown", e => snake.changeDirection(e));
+        })();
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            snake.move();
+            snake.draw();
+            food.draw();
+
+            if (snake.eat(food)) {
+                score++;
+                food = new Food();
+            }
+
+            if (snake.checkCollision()) {
+                resetGame();
+            }
+
+            document.querySelector("#score-board").textContent = `Очки: ${score}`;
+        }
+
+        function resetGame() {
+            score = 0;
+            snake = new Snake();
+            food = new Food();
+        }
+
+        function Snake() {
+            this.body = [{ x: 5, y: 5 }];
+            this.direction = "RIGHT";
+
+            this.draw = function () {
+                this.body.forEach((part, index) => {
+                    ctx.fillStyle = index === 0 ? "green" : "lightgreen";
+                    ctx.fillRect(part.x * scale, part.y * scale, scale, scale);
+                });
+            };
+
+            this.move = function () {
+                const head = { ...this.body[0] };
+
+                switch (this.direction) {
+                    case "LEFT":
+                        head.x--;
+                        break;
+                    case "RIGHT":
+                        head.x++;
+                        break;
+                    case "UP":
+                        head.y--;
+                        break;
+                    case "DOWN":
+                        head.y++;
+                        break;
+                }
+
+                this.body.unshift(head);
+                this.body.pop();
+            };
+
+            this.changeDirection = function (event) {
+                switch (event.keyCode) {
+                    case 37:
+                        if (this.direction !== "RIGHT") this.direction = "LEFT";
+                        break;
+                    case 38:
+                        if (this.direction !== "DOWN") this.direction = "UP";
+                        break;
+                    case 39:
+                        if (this.direction !== "LEFT") this.direction = "RIGHT";
+                        break;
+                    case 40:
+                        if (this.direction !== "UP") this.direction = "DOWN";
+                        break;
+                }
+            };
+
+            this.eat = function (food) {
+                const head = this.body[0];
+                if (head.x === food.position.x && head.y === food.position.y) {
+                    this.body.push({ ...food.position });
+                    return true;
+                }
+                return false;
+            };
+
+            this.checkCollision = function () {
+                const head = this.body[0];
+
+                if (head.x < 0 || head.x >= columns || head.y < 0 || head.y >= rows) {
+                    return true;
+                }
+
+                for (let i = 1; i < this.body.length; i++) {
+                    if (head.x === this.body[i].x && head.y === this.body[i].y) {
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+        }
+
+        function Food() {
+            this.position = {
+                x: Math.floor(Math.random() * columns),
+                y: Math.floor(Math.random() * rows),
+            };
+
+            this.draw = function () {
+                ctx.fillStyle = "red";
+                ctx.fillRect(this.position.x * scale, this.position.y * scale, scale, scale);
+            };
+        }
+    </script>
+</body>
+</html>
